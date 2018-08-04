@@ -1,0 +1,12 @@
+^G     Get Help
+^X     EXIT
+^O     write out
+^R     read file
+^W     where is
+^\     replace
+^K     cut text
+^U     uncut text
+^J     justiy
+^T     to spell
+^C     cur pos
+^_     GO TO LINE
