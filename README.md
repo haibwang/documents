@@ -1,2 +1,2 @@
 # documents
-note book
+- 一些学习笔记
