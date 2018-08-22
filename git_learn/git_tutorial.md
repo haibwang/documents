@@ -58,7 +58,7 @@ https://zhuanlan.zhihu.com/p/21193604
 
 ##### 多人协作
 
-- 从远程库克隆分支时，自动的把本地maste和远程master关联起来了。远程库默认的名字就是origin
+- 从远程库克隆分支时，自动的把本地master和远程master关联起来了。远程库默认的名字就是origin
 - 使用git remite查看远程库的信息，加个参数-v查看详细信息
 
   推送分支
