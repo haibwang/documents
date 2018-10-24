@@ -1,4 +1,55 @@
-### 1 基础
+### 环境搭建
+
+ [Download the MSYS2 installer](https://msys2.github.io/) that matches your platform and follow the installation instructions. 
+
+#### Step 2: Install GTK+3 and its dependencies
+
+Open a MSYS2 shell, and run:
+ `pacman -S mingw-w64-x86_64-gtk3` 
+
+#### Step 3 (recommended): Install GTK+ core applications
+
+**Glade** is a GUI designer for GTK+. It lets you design your GUI and export it in XML format. You can then import your GUI from your code using the `GtkBuilder` API. Read the `GtkBuilder` section in the GTK+ manual for more information.
+
+To install Glade:
+ `pacman -S mingw-w64-x86_64-glade` 
+
+**Devhelp** is a help browser. It lets you easily  navigate offline in the GTK+, glib and gobject API help relative to the  version of these libraries installed on your system.
+
+To install Devhelp:
+ `pacman -S mingw-w64-x86_64-devhelp` 
+
+#### Step 4 (optional): Install the Python bindings
+
+If you want to develop a GTK+3 application in Python, you need to install the Python bindings.
+
+If you develop in Python 3:
+ `pacman -S mingw-w64-x86_64-python3-gobject` 
+
+If you develop in Python 2:
+ `pacman -S mingw-w64-x86_64-python2-gobject` 
+
+#### Step 5 (optional): Install build tools
+
+If you want to develop a GTK+3 application in other languages like C,  C++, Fortran, etc, you'll need a compiler like gcc and other  development tools:
+ `pacman -S mingw-w64-x86_64-toolchain base-devel` 
+
+
+
+- 导出所有依赖头文件
+
+  ```
+  pkg-config --cflags gtk+-3.0
+  ```
+
+- 导出所有依赖库
+
+  ```
+  pkg-config --libs gtk+-3.0
+  ```
+
+
+### 基础
 
 - 例子0
 
@@ -7,7 +58,7 @@
 
 
 /**
-* 在activate()函数中，使用gtk_application_window_new()函数构建了一个GTKwindow，并且班值保存在window*  * 指针中，这个window有一个框架，一个标题条，窗口的控制取决于平台 
+* 在activate()函数中，使用gtk_application_window_new()函数构建了一个GTKwindow，并且把值保存在window*  * 指针中，这个window有一个框架，一个标题条，窗口的控制取决于平台 
 */
 
 static void
