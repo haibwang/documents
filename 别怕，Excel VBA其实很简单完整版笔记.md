@@ -362,7 +362,7 @@ End Sub
 
 ### 2 常用对象
 
-#### 2.1对象模型
+#### 2.1 对象模型
 
 #### 2.2 常用对象
 
@@ -373,40 +373,40 @@ End Sub
 | Worksheets  | 工作表             |
 | Range       | 单元格或单元格区域 |
 
-- Application对象常用属性和方法
+###### Application对象常用属性和方法
 
-  - screenUpdating：程序的计算结果是否显示在屏幕上，默认为TRUE
+- screenUpdating：程序的计算结果是否显示在屏幕上，默认为TRUE
 
-  - DisplayAlerts：显示警告属性，默认为TRUE
+- DisplayAlerts：显示警告属性，默认为TRUE
 
-  - EnableEvents：启用或禁止事件
+- EnableEvents：启用或禁止事件
 
-    事件是能够被Excel认识的一个动作，当触发某个事件时，会自动执行指定的代码
+  事件是能够被Excel认识的一个动作，当触发某个事件时，会自动执行指定的代码
 
-  - WorksheetFunction：引用worksheet的函数
+- WorksheetFunction：引用worksheet的函数
 
-  - excel梳妆打扮属性
+- excel梳妆打扮属性
 
-    - Application.Caption：标题栏属性
+  - Application.Caption：标题栏属性
 
-  - 引用对象
+- 引用对象
 
-    | 对象           | 说明                                        |
-    | -------------- | ------------------------------------------- |
-    | ActiveCell     | 当前活动单元格                              |
-    | ActiveChart    | 当前活动工作簿中的活动图表                  |
-    | ActiveSheet    | 当前活动工作簿中的活动工作表                |
-    | ActiveWindow   | 当前活动窗口                                |
-    | ActiveWorkbook | 当前活动工作簿                              |
-    | Charts         | 当前活动工作簿中的所有图表                  |
-    | selection      | 当前活动工作簿中的所有选中对象              |
-    | sheets         | 当前工作簿中所有sheet对象                   |
-    | worksheet      | 当前中作簿中所有worksheet对象（普通工作表） |
-    | workbooks      | 当前所有打开的工作簿                        |
+  | 对象           | 说明                                        |
+  | -------------- | ------------------------------------------- |
+  | ActiveCell     | 当前活动单元格                              |
+  | ActiveChart    | 当前活动工作簿中的活动图表                  |
+  | ActiveSheet    | 当前活动工作簿中的活动工作表                |
+  | ActiveWindow   | 当前活动窗口                                |
+  | ActiveWorkbook | 当前活动工作簿                              |
+  | Charts         | 当前活动工作簿中的所有图表                  |
+  | selection      | 当前活动工作簿中的所有选中对象              |
+  | sheets         | 当前工作簿中所有sheet对象                   |
+  | worksheet      | 当前中作簿中所有worksheet对象（普通工作表） |
+  | workbooks      | 当前所有打开的工作簿                        |
 
-- Workbook对象
+###### Workbook对象
 
-   通过指明工作簿的位置和名称引用单个工作簿
+通过指明工作簿的位置和名称引用单个工作簿
 
   ```vb
   Workbooks("book1.xlsx")    '引用book1工作簿
@@ -446,25 +446,163 @@ End Sub
   
   ```
 
-- Worksheets对象
+###### Worksheets对象
 
-  worksheet的代码名称和标签名称
+worksheet的代码名称和标签名称
+
+```VB
+Worksheets.add after:=worksheets(1) count:=3   '在第一张工作表之后创建3张工作表
+Worksheets.add befor:=Worksheets(Worksheets.count) count:=2'在最后一张工作表前插入两张表
+Worksheets(1).name = "联系方式" '更改工作表的标签名称
+Worksheets(1).delete '删除工作表
+Worksheets(1).Activate <==> Worksheets(1).select '激活工作表
+Worksheets("工资表").copy before:=worksheets("出勤表") '拷贝工作表，在同一个工作簿中，自动命名，与原工作表不同
+Worksheets("工资表").COPY '将复制到一个新的工作簿中，名字和原来的一样
+    
+'移动工作簿
+'隐藏和显示工作簿
+'获取工作表的数目
+Worksheets.count
+    
+```
+
+###### Range对象
+
+Range对象代表一个单元格或者是单元格区域
+
+- 多种方法引用Range对象
+
+  ```vb
+  Range("A1:A4").value=50 '参数是表示单元格地址的字符串或字符串变量
+  Range("A1:A4, A8:A10").select '引用多个不连续的区域，中间用逗号隔开
+  Range("A1:A4 A2:D3").select '选中多个区域的交集，中间使用空格
+  '使用两个区域围城的矩形域
+  Range("C3:D8","e10:g15").select '两个参数是表示单元格地址的字符串，也可以是Range对象
+              
+              
+  Public Sub sele()
+  Dim R1 As Range
+  Dim R2 As Range
+  Set R1 = Range("A1:A4")
+  Set R2 = Range("d6:f9")
+  Range(R1, R2).Select
+  With Selection
+      .Value = 1
+      .HorizontalAlignment = xlCenter     
+  End With
+  End Sub
+  ```
+
+- cell属性
+
+  ```vb
+  Activesheet.Cells(3,4).value =23'引用单元格的3行4列，行号只能是数字，列号可以是数字和字母
+  ActiveSheet.cells(3,"D").value = 23 '和上面等价
+  
+  Range("B4:F9").Cells(2,3).value=100'Range对象的cell，返回Range单元格区域的第2行第3列
+  
+  'cells属性用作Range属性的参数,下面四局等价
+  Range(cells(1,1),cells(10,5)).select
+  Range("A1:E10").select
+  Range("A1","E10").select
+  Range(Range("A1"),Range("e10")).select
+          
+  'cells对象的参数可以只有一个
+  Activesheet.cells(2)'sheet的第二个单元格，一个sheet的单元格有65535行*256列，从左到右，从上到下依次排序，从1开始
+  Range("A2:b4").CELLS(2).value=100 '引用的是Range对象引用区域的第二个单元格，cell的参数可以超过Range区域单元格格式，超出部分Range对象区域会往下扩展行，列数不变。
+  'cells不带参数，返回的是整个对象的单元格
+  ```
+
+- 更简短的单元格引用方式
 
   ```VB
-  Worksheets.add after:=worksheets(1) count:=3   '在第一张工作表之后创建3张工作表
-  Worksheets.add befor:=Worksheets(Worksheets.count) count:=2'在最后一张工作表前插入两张表
-  Worksheets(1).name = "联系方式" '更改工作表的标签名称
-  Worksheets(1).delete '删除工作表
-  Worksheets(1).Activate == Worksheets(1).select '激活工作表
-  Worksheets("工资表").copy before:=worksheets("出勤表") '拷贝工作表，在同一个工作簿中，自动命名，与原工作表不同
-  Worksheets("工资表").COPY '将复制到一个新的工作簿中，名字和原来的一样
-      
-      '移动工作簿
-      '隐藏和显示工作簿
-      '获取工作表的数目
-      Worksheets.count
-      
+  [B1]=10'直接在方括号内些单元格地址，不加引号
+  [A1:A10,C1:C10,E1:E10] '三个单元格的合并区域
+  [A1:A10 A5:D5]'两个单元格区域的公共区域
   ```
+
+- 引用整行
+
+  ```vb
+  ActiveSheet.Rows("3：3") '活动单元格的第三行
+  ActiveSheet.Row(3) '活动单元格的第三行
+  ActiveSheet.Rows("3:5")'活动单元格的第3到5行
+  Rows("3:10").Rows(1)'3-10行的第一行
+  ```
+
+- 引用整列
+
+  ```VB
+  Columns("A:F")
+  Columns("B:F").Columns("B:B").select '选中BF列区域的第二列
+  ```
+
+- Union,ReSize,usedRange,currentRegion,End属性返回的单元格区域
+
+###### 操作单元格，还需要了解什么
+
+- 单元格里面的内容
+
+  - value:默认属性
+  - count:单元格区域的单元格数量
+  - Address:单元格地址
+
+- 复制单元格区域
+
+  ```VB
+  Range("A1").copy Range("C1")
+  
+  '如果不确定单元格区域的大小，可以只指定目标单元格区域的左上角单元格
+  Range("B5").currentRegion.copy Range("F1")
+  
+  ```
+
+- 剪切单元格区域
+
+  同复制
+
+- 删除单元格
+
+  ```vb
+  Range("A1").delete shift:=xlToLeft '删除单元格，右侧单元格左移
+  Range("A1").delete shift:=xlUp '删除单元格，下方单元格上移
+  Range("A1").EntireRow.delete '删除整行
+  Range("A1").EntireColumn.delete '删除整列
+  
+  ```
+
+
+
+
+
+##### 2.3 其他常见对象
+
+- 名称，names集合
+
+  名称，即为单元格区域的名字，一个自定义名称就是一个Name对象，Names就是工作簿中所有名称的集合
+
+
+
+```VB
+Sub wbadd()
+Dim wb As Workbook, sht As Worksheet
+Set wb = Workbooks.Add
+Set sht = wb.Worksheets(1)
+
+With sht
+.Name = "learn"
+.Range("A1:C1") = Array("姓名", "年龄", "性别")
+
+End With
+wb.SaveAs ThisWorkbook.Path & "/learn.xlsx"
+ActiveWorkbook.Close
+End Sub
+
+```
+
+#### 3 EXCEL事件
+
+
 
 
 
