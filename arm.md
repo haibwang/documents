@@ -293,15 +293,15 @@ LR就是连接寄存器（Link Register，LR）在ARM体系结构中LR的特殊�
 
 【2】SECTION 指令是声明段，一个段不能同时包含 public symbol 和 pubweak symbol ，模块只有在相同的名字的模块没有被链接进来的时候才会被链接进来。
 
-​    语法格式：**SECTION section:type [flag] [(align)]**
-
-​        align，是用于指定地址对齐到 2^align，他的取值是 0 到 30
-
-​        flag，取值NOROOT、ROOT、REORDER、NOREORDER，默认是ROOT，NOROOT表示如果这个段中的符号没有被引用，将会被连接器舍弃，即可被优化。ROOT表示不可被优化。REORDER表示开始一个新的名字是 section 的段（section），NOREORDER表示开始一个新的名字为 section 的片段（fragment），多个片段组成一个段（section）
-
-​        type，memory 的类型，取值是 CODE、CONST、DATA
-
-​        section，段的名字
+    语法格式：**SECTION section:type [flag] [(align)]**
+    
+        align，是用于指定地址对齐到 2^align，他的取值是 0 到 30
+    
+        flag，取值NOROOT、ROOT、REORDER、NOREORDER，默认是ROOT，NOROOT表示如果这个段中的符号没有被引用，将会被连接器舍弃，即可被优化。ROOT表示不可被优化。REORDER表示开始一个新的名字是 section 的段（section），NOREORDER表示开始一个新的名字为 section 的片段（fragment），多个片段组成一个段（section）
+    
+        type，memory 的类型，取值是 CODE、CONST、DATA
+    
+        section，段的名字
 
 【3】EXTERN 用导入其他模块的 symbol（符号）
 
@@ -446,3 +446,123 @@ BusFault_Handler
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ```
 
+### Linux Arm启动
+
+```assembly
+.text
+.global _start
+_sart:
+	ldr r0,=0x53000000 ;看门狗寄存器地址
+	mov r1,#0
+	str r1,[r0]        ;禁止看门狗，否则CPU会不断重启
+	ldr sp,=1<<12      ;设置堆栈
+	bl  main           ;调用C程序的main函数
+	
+halt_loop:
+	b halt_loop        ;无限循环
+
+
+```
+
+再新建一个led.c文件，代码如下
+
+```c
+#define GPFCON      (*(volatile unsigned long *)0x56000050)
+#define GPFDAT      (*(volatile unsigned long *)0x56000054)
+int main()
+{
+    GPFCON = 0x00000100;    // 设置GPF4为输出口, 位[9:8]=0b01
+    GPFDAT = 0x00000000;    // GPF4输出0，LED1点亮
+    return 0;
+}
+```
+
+再新建一个Makefile文件，内容如下
+
+```makefile
+led.bin:startup.S led.c
+	arm-linux-gcc -g -c -o startup.o startup.S
+	arm-linux-gcc -g -c -o led.o led.c
+	arm-linux-ld -Ttext 0x00000000 -g startup.o led.o -o led_elf
+	arm-linux-objcopy -O binary -S led_elf led.bin
+	arm-linux-objdump -D -m arm led_elf > led.dis
+```
+
+最后编译运行，得到的反汇编代码如下
+
+
+```assembly
+led_elf:     file format elf32-littlearm
+ 
+Disassembly of section .text:
+ 
+00000000 <_start>:
+   0:	e3a00453 	mov	r0, #1392508928	; 0x53000000
+   4:	e3a01000 	mov	r1, #0	; 0x0
+   8:	e5801000 	str	r1, [r0]
+   c:	e3a0da01 	mov	sp, #4096	; 0x1000
+  10:	eb000000 	bl	18 <main>
+ 
+00000014 <halt_loop>:
+  14:	eafffffe 	b	14 <halt_loop>
+ 
+00000018 <main>:
+  18:	e1a0c00d 	mov	ip, sp
+  1c:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}
+  20:	e24cb004 	sub	fp, ip, #4	; 0x4
+  24:	e3a03456 	mov	r3, #1442840576	; 0x56000000
+  28:	e2833050 	add	r3, r3, #80	; 0x50
+  2c:	e3a02c01 	mov	r2, #256	; 0x100
+  30:	e5832000 	str	r2, [r3]
+  34:	e3a03456 	mov	r3, #1442840576	; 0x56000000
+  38:	e2833054 	add	r3, r3, #84	; 0x54
+  3c:	e3a02000 	mov	r2, #0	; 0x0
+  40:	e5832000 	str	r2, [r3]
+  44:	e3a03000 	mov	r3, #0	; 0x0
+  48:	e1a00003 	mov	r0, r3
+  4c:	e89da800 	ldmia	sp, {fp, sp, pc}
+
+    在这里，我很惊奇地发现，我编写的汇编代码ldr r0,=0x53000000        ;看门狗寄存器地址经过编译以后变成了mov    r0, #1392508928    ; 0x53000000
+    这是为什么呢，因为arm使用的是定长指令集，使用mov指令传送32位数据的时候，只剩下了可耻的12位，不足32位，但是arm又想表示尽可能大的32位数，这里arm使用了一种常数循环移位算法来使用12位数得到一个32位数，这样的话，肯定有些数不能用mov传送表示。我们来看mov指令对应的二进制数e3a00453，e3a表示操作码，00表示寄存器a0，那么就剩下453了。如果每次编写汇编代码都去手工计算这个数能不能使用mov，这是很恐怖的事情。幸好，编译器用ldr伪指令帮我们解决了这个问题。所以，编写汇编代码使用mov的时候能用ldr就用ldr，除非你能肯定立即数是合法的mov操作。
+  我们再看看在调用main函数的时候汇编代码做了什么处理，在退出main函数的时候汇编代码做了什么处理。
+
+调用main函数的时候，编译器使用如下汇编代码处理
+00000018 <main>:
+  18:	e1a0c00d 	mov	ip, sp                       //IP=SP;保存SP
+  1c:	e92dd800 	stmdb	sp!, {fp, ip, lr, pc}    //依次对pc,lr，ip，fp压栈
+  20:	e24cb004 	sub	fp, ip, #4	; 0x4            //fp=ip-4；此时fp指向栈里面的“fp”
+退出main函数的时候，编译器使用如下汇编代码处理
+  4c:	e89da800 	ldmia	sp, {fp, sp, pc}         //弹栈依次弹出fp、sp、pc
+这里有一个问题，压进去四个数，弹出来只有3个数，这是为什么，通常不是成对成对地压入弹出吗，分析下
+先看下调用过程bl	18 <main>
+首先，bl指令执行的时候会把下一条指令的执行地址拷贝到r14即lr链接寄存器中
+然后，保存当前sp数据到ip寄存器中，即r13是sp寄存器保存到r12是ip寄存器中
+其次，依次压栈pc,lr，ip，fp，即r15，r14，r12，r11（fp寄存器，堆栈指针，用来存放函数的局部变量）
+然后，sub	fp, ip, #4	;使得堆栈指针也指向当前栈顶指针fp
+ 
+然后我们再看退出main函数操作
+fp出栈，fp恢复调用之前的值
+ip出栈，由于事先使用mov ip，sp，这样sp直接恢复调用前的值
+pc出栈，pc弹出的内容来自lr链接寄存器，这个lr来源于bl执行的时候
+通过这种操作，成功地恢复了调用main函数前的寄存器状态，并且程序继续正常运行。
+压栈四个，出栈3个的汇编代码确实不好理解，这里面主要依靠mov ip，sp以及bl指令操作lr寄存器实现。
+当然我们也可以使用正常的压栈四个出栈四个实现，进出栈操作7次，mov操作一次，与进出栈操作8次，无mov操作是一样的。
+```
+---------------------
+作者：科教兴国 
+来源：CSDN 
+原文：https://blog.csdn.net/u010422438/article/details/81671737 
+版权声明：本文为博主原创文章，转载请附上博文链接！
+
+
+
+
+
+### MMU内存管理单元
+
+- 虚拟地址VA
+- 转换后的虚拟地址MVA
+- 物理地址PA
+- 段（1M）、页（64K）、小页（4K）、极小页（1K）
+- 段描述符、大页描述符、小页描述符、极小页描述符----保存段、页、小页、极小页起始物理地址
+- 粗页描述符（4K）、细页描述符（1k）－－－－保存二级表物理地址
