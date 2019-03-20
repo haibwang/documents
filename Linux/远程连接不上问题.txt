@@ -1,0 +1,3 @@
+远程连接linux,显示network connect failed
+原因：ssh没有开启，/etc/init.d/ssh restart 
+安装openssh
