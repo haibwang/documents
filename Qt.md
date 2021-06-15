@@ -360,11 +360,150 @@ QComboBox是下拉列表。每个子项可以关联一个Qvariant变量，用于
 
 ### 4.6 QListWidget和QToolButton
 
+- 用于item的组件有两类
+  - Item Viewa
+    - QListView
+    - QTreeView
+    - QTableView
+    - QColumnView
+  - Item widgets
+    - QListWidget
+    - QTreeWidget
+    - QTableWidget
+
+  Item View s是基于模型视图结构，数据与模型关联实现数据的显示和编辑
+
+  Item widget是直接将数据存储在每个项里面
+
+- toolbox组件里面可以放任何组件
+
+- QTabWidget是一个多页的容器
+
+  - tabposition：标签位置，可以选择东西南北四个方向
+  - currentIndex:当前页编号
+  - currentTabText:当前页标题
+  - currentTabName当前页对象名称
+  - currentTabIcon当前页图标
+
+- QSplitter设计分割界面
+
+  - 可以左右上下分割
+
+  - 在窗口构造器里面使用语句可以填充整个工作区
+
+    ```c++
+    setCentralWidget(ui->splitter);
+    ```
+
+- QListWidget
+
+  - flags属性：是Qt::ItemFlag的枚举值
+
+    - selectable项是否可选择
+    - editable是否可编辑
+    - dragEnabled是否可被拖动
+    - dropEnabled是否可以接收拖放的项
+    - userCheckable是否可复选
+    - enable是否被使能
+    - tristate是否允许第三态
+
+    代码设置flags属性使用`setFlags`方法
+
+    往QListWidget组件添加QListWidgetIteam。每一项是一个QListWidgetIteam对象
+
+  - 常用信号
+
+    - currentRowChanged(int currenRow)传递当前项的行号
+    - currentItenChanged(QListWidgetItem *currentItem, QListWidgetItem *previous);
+
+- QToolButton与下拉菜单
+
+  - QToolButton关联Action
+
+    QToolButton函数有个方法`setDefaultAction`设置默认action, 添加私有函数，在ui类构造函数调用
+
+    ```c++
+    void QtClass::setActionForToolButton(void)
+    {
+    	ui.toolButton_listWidgetInit->setDefaultAction(ui.action_init);
+    	ui.toolButton_listWidgetClear->setDefaultAction(ui.action_clear);
+    }
+    ```
+
+  - 为QToolButoon设置下拉菜单
+
+    QToolButoon下拉菜单按钮不点小三角里面的有一个默认action，通过方法`setDefaultAction`设置，三角里面可以设置别的菜单action
+
+    ```c++
+    //默认action的信号和槽设置
+    QObject::connect(ui.actionactPopMenu, SIGNAL(triggered()), ui.action_init, SLOT(trigger()));//actionactPopMenu与action_init绑定
+    
+    //设置菜单
+    void QtClass:: setToolButoonPopMenu(void)
+    {
+    	ui.toolButton_popMenu->setPopupMode(QToolButton::MenuButtonPopup);//设置按小三角
+    	ui.toolButton_popMenu->setDefaultAction(ui.actionactPopMenu);//设置默认action
+    	ui.toolButton_popMenu->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+        
+    	QMenu* menu;
+    	menu = new QMenu(this);
+    	menu->addAction(ui.action_insert);
+    	menu->addAction(ui.action_append);
+    	menu->addAction(ui.action_del);
+    	ui.toolButton_popMenu->setMenu(menu);//给小三角添加菜单
+    }
+    ```
+
+    
+
+  
+
+- 创建快捷菜单
+
+  每个从widget继承的类都有customContexMenuRequested(const Qpoint &)信号,该信号在鼠标右击是发射。
+
+  以listWidget组件为例添加右键菜单
+
+  ```c++
+  //设置组件菜单自定义
+  ui.listWidget->setContextMenuPolicy(Qt::CustomContextMenu);//或者在ui设计界面设置该属性
+  
+  //绑定信号与槽
+  QObject::connect(ui.listWidget, SIGNAL(customContextMenuRequested(const QPoint &)),this,
+  		SLOT(on_customContextMenuRequested(const QPoint &)));
+  //槽函数实现，添加右键菜单
+  void QtClass::on_customContextMenuRequested(const QPoint &pos)
+  {
+  	Q_UNUSED(pos);
+  	QMenu *menu = new QMenu(this);
+  	menu->addAction(ui.action_clear);
+  	menu->addAction(ui.action_del);
+  	menu->addAction(ui.action_insert);
+  	menu->addAction(ui.action_append);
+  	menu->exec(QCursor::pos());
+  	delete menu;
+  }
+  ```
+
+  
+
+#### 4.7 QTreeWidget和QDocWidget
+
 
 
 ## 5 Model/View（模型/视图）结构
 
 是Qt的组件显示和数据编辑的一种结构。视图是显示和编辑数据的组件界面，模型是视图和原始数据之间的接口。
+
+```
+
+```
+
+
+
+
+
+
 
 
 
@@ -415,3 +554,83 @@ QUrl    getOpenFileUrl()//选择一个网络远程文件打开
 #### 7.1.3 QFile和QTextStream结合方式读写文件
 
 创建QTextStream对象，把QFile对象传递给Stream。读写方式采用Stream读写。
+
+```c++
+void notepad::on_actOpen_clicked(void)
+{
+    QString path = QDir::currentPath();
+    QString name = QFileDialog::getOpenFileName(this, "打开文件...", path, 
+        "程序文件(*.h *.cpp) ;; 文本文件(*.txt) ;; 所有文件(*.*)");
+    
+    openFile = new QFile(name);
+    openFile->open(QIODevice::ReadOnly);
+    QTextStream* stream = new QTextStream(openFile);
+
+    //QString str = openFile->readAll();//读取中文会乱码
+    stream->setAutoDetectUnicode(true);
+    QString str = stream->readAll();
+ 
+    ui.textEdit->setText(str);
+    ui.textEdit->setEnabled(true);
+    openFile->close();
+}
+```
+
+### 7.2 二进制文件的读写
+
+qt使用QFile和QDataStream来读取而二进制文件，QFile复制IO，QDataStream负责流
+
+QDataStream保存文件有两种编码方式：
+
+- Qt预定义编码方式（.stm）
+  - 会自动添加数据类型的标记字节
+- 标准编码方式（.dat）
+  - 完全是和文件一样的二进制数据
+
+#### 7.2.1 Qt预定义编码文件的读写
+
+​	和TextStream一样，只是把QTextStream替换为QDataStream，在使用QDataStream对象之前，需要设置QDataStream的版本
+
+```c++
+dataStream.setVersion(QDataStream::Qt_5_9);
+```
+
+#### 7.2.2 标准编码文件读写
+
+需要制定二进制文件的字节序
+
+```c++
+dataStream.setByteOrde(QDataStream::LittleEndian);
+```
+
+- 写文件使用`writeRawData`方法
+- 使用`writeBytes`方写入，会自动先把字符串的长度写入到文件中（4个字节）
+
+- 读文件使用`readRawData` 方法
+- `readByte`会先读取4个字节的长度
+
+### 7.3 文件目录的操作
+
+- QCoreApplication:用于提取应用程序的路径，名字
+- QFile: 打开，复制，删除文件
+- QFileInfo：用于提取文件的信息，包括路径，文件名，后缀
+- QDir:用于提取文件目录，或文件信息，获取一个目下的文件或目录列表，创建和删除目录和文件，文件重命名
+- QTemporaryDir和QTemporaryFile:用于创建临时目录和文件
+- QFileSystemWatcher文件和目录监听类，监听目录下文件的添加删除等变化，监听文件修改
+
+#### 7.3.3 QCoreApplication类
+
+​    是为无GUI应用提供事件循环的类，是所用应用程序的基类
+
+
+
+
+
+## 8 绘图
+
+
+
+
+
+
+
